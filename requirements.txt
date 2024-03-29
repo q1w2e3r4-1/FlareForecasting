@@ -1,0 +1,5 @@
+# we suggest python = 3.7
+requests==2.31.0
+beautifulsoup4==4.12.3
+urllib3==1.26.15
+re
