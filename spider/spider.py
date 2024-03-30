@@ -20,7 +20,7 @@ class Spider(object):
     def set_csv_path(self, path):
         self.csv_path = path
         with open(self.get_csv_path(), 'w+') as file:
-            file.write("Date,NOAA_id,Latitude,Longitude,Class,Time\n")
+            file.write("Date,NOAA_id,Latitude,Longitude,Area,Class,Time\n")
 
     def get_csv_path(self):
         return self.csv_path
@@ -61,6 +61,8 @@ class Spider(object):
             document = []
             number = content.find(id='noaa_number').a.string
             position = re.findall(r'-?\d+', content.find(id='position').get_text())[2:4]  # 使用的是下面的角秒形式
+            area_raw = re.findall(r'^-?\d+', content.find(id='area').get_text().replace(' ', '').replace('\"',''))
+            area = area_raw[0] if len(area_raw) != 0 else '0'  # 获取今日区域大小,如果不存在的话补0
 
             todays = []
             yesterdays = []
@@ -87,13 +89,11 @@ class Spider(object):
             if len(todays) == 0:  # no flare
                 todays.append(["N", "99:99"])
             for today in todays:
-                # document.append([self.get_today_date(), number, position[0], position[1], today])
-                document.append([self.get_today_date(), number, position[0], position[1], today])
+                document.append([self.get_today_date(), number, position[0], position[1], area, today])
 
             if len(yesterdays) != 0:
                 for yesterday in yesterdays:
-                    # document.append([self.get_today_date(), number, position[0], position[1], yesterday])
-                    document.append([self.get_today_date(), number, position[0], position[1], yesterday])
+                    document.append([self.get_today_date(), number, position[0], position[1], area, yesterday])
             self.save(document)
             print(document)
 
