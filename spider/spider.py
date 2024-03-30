@@ -3,9 +3,12 @@ import datetime
 import requests
 from bs4 import BeautifulSoup
 import re
+import os
 
-class SolarMonitor(object):
+
+class Spider(object):
     def __init__(self):
+        self.csv_path = ''
         self.URL = "https://solarmonitor.org/index.php"
         self.Parameter = {"date": "20160213", "type": "shmi_maglc", "indexnum": "1"}
         self.Header = {'user-agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 '
@@ -13,6 +16,14 @@ class SolarMonitor(object):
 
     def set_date(self, date):
         self.Parameter['date'] = date
+
+    def set_csv_path(self, path):
+        self.csv_path = path
+        with open(self.get_csv_path(), 'w+') as file:
+            file.write("Date,NOAA_id,Latitude,Longitude,Class,Time\n")
+
+    def get_csv_path(self):
+        return self.csv_path
 
     def get_today_date(self):
         return self.Parameter['date']
@@ -29,8 +40,8 @@ class SolarMonitor(object):
         return BeautifulSoup(requests.get(self.URL, self.Parameter, headers=self.Header).text, 'html.parser')
 
     def save(self, doc):
-        # with open("spider/data/" + self.get_today_date()[:4] + ".csv", 'a+') as file:
-        with open("spider/data/" + self.get_today_date()[:4] + ".csv", 'a+') as file:
+        # with open("data/" + self.get_today_date()[:4] + ".csv", 'a+') as file:
+        with open(self.get_csv_path(), 'a+') as file:
             for d in doc:
                 line = ""
                 for i in range(len(d)):
@@ -49,7 +60,7 @@ class SolarMonitor(object):
             # print(content.get_text())
             document = []
             number = content.find(id='noaa_number').a.string
-            position = re.findall(r'\d+', content.find(id='position').get_text())[2:4] # 使用的是下面的角秒形式
+            position = re.findall(r'-?\d+', content.find(id='position').get_text())[2:4]  # 使用的是下面的角秒形式
 
             todays = []
             yesterdays = []
@@ -73,7 +84,7 @@ class SolarMonitor(object):
                     except KeyError:
                         print("Unparsable text,please contact TA(Text:", i.get_text())
 
-            if len(todays) == 0: # no flare
+            if len(todays) == 0:  # no flare
                 todays.append(["N", "99:99"])
             for today in todays:
                 # document.append([self.get_today_date(), number, position[0], position[1], today])
@@ -87,20 +98,26 @@ class SolarMonitor(object):
             print(document)
 
 
-def main(x, y):
-    test = SolarMonitor()
-    test.set_date("20180207")
-    test.get_data()
-    # start = datetime.date(x, 1, 1)
-    # end = datetime.date(y, 12, 31)
-    # while start != end:
-    #     test.set_date(str(start).replace("-", ''))
-    #     try:
-    #         test.get_data()
-    #     except requests.exceptions.ConnectionError:
-    #         print("Retry!")
-    #         continue
-    #     start = start + datetime.timedelta(days=1)
+def main(start_t, end_t):
+    spider = Spider()
+    start = datetime.date(*start_t)
+    end = datetime.date(*end_t)
+
+    assert (start <= end)
+    csv_name = "data/" + str(start).replace("-", '') + '-' + str(end).replace("-", '') + '.csv'
+    spider.set_csv_path(csv_name)
+
+    while start != end:
+        spider.set_date(str(start).replace("-", ''))
+        try:
+            spider.get_data()
+        except requests.exceptions.ConnectionError:
+            print("Retry!")
+            continue
+        start = start + datetime.timedelta(days=1)
+
 
 if __name__ == '__main__':
-    main(2018, 2018)
+    start_time = (2022, 1, 1)
+    end_time = (2024, 3, 20)
+    main(start_time, end_time)
