@@ -60,7 +60,7 @@ class Spider(object):
             # print(content.get_text())
             document = []
             number = content.find(id='noaa_number').a.string
-            position = re.findall(r'-?\d+', content.find(id='position').get_text())[2:4]  # 使用的是下面的角秒形式
+            position = re.findall(r'-?\d+', content.find(id='position').get_text())[-2:]  # 使用的是下面的角秒形式
             area_raw = re.findall(r'^-?\d+', content.find(id='area').get_text().replace(' ', '').replace('\"',''))
             area = area_raw[0] if len(area_raw) != 0 else '0'  # 获取今日区域大小,如果不存在的话补0
 
@@ -118,6 +118,6 @@ def main(start_t, end_t):
 
 
 if __name__ == '__main__':
-    start_time = (2022, 1, 1)
+    start_time = (1996, 11, 28)
     end_time = (2024, 3, 20)
     main(start_time, end_time)
